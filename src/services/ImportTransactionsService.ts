@@ -6,6 +6,9 @@ import Transaction from '../models/Transaction';
 import uploadConfig from '../config/upload';
 import CreateTransactionService from './CreateTransactionService';
 
+import AppError from '../errors/AppError';
+
+// data structure for transactions to be created
 interface TransactionDTO {
   title: string;
   value: number;
@@ -25,7 +28,7 @@ class ImportTransactionsService {
       rtrim: true,
     });
     const parseCSV = readCSVStream.pipe(parseStream);
-    const lines = [];
+    const lines: Array<string[]> = [];
     parseCSV.on('data', line => {
       lines.push(line);
     });
@@ -36,6 +39,7 @@ class ImportTransactionsService {
     // this array contains all transactions to be created
     const transactionDTOArray: TransactionDTO[] = [];
 
+    // transform each line in a transaction to be created
     lines.forEach(line => {
       const [title, type, value, category] = line;
 
@@ -49,23 +53,27 @@ class ImportTransactionsService {
       transactionDTOArray.push(transactionDTO);
     });
 
-    // create transaction service
+    // instantiate transaction service
     const createTransaction = new CreateTransactionService();
 
     // array of stored transactions
     const storedTransactions: Transaction[] = [];
 
-    transactionDTOArray.forEach(transaction => {
-      createTransaction.execute(transaction).then(result => {
-        storedTransactions.push(result);
-      });
-    });
+    const promises = [];
 
-    await new Promise(() => {
-      if (storedTransactions.length === transactionDTOArray.length) {
-        return Promise.resolve(console.log('Pronto'));
-      }
-    });
+    transactionDTOArray.forEach(transactionDTO =>
+      promises.push(createTransaction.execute(transactionDTO)),
+    );
+
+    await Promise.all(promises)
+      .then(results =>
+        results.forEach(entry => {
+          storedTransactions.push(entry);
+        }),
+      )
+      .catch(() => {
+        throw new AppError('Transactions from csv file could not be stored.');
+      });
 
     return storedTransactions;
   }
