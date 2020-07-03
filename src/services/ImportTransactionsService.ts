@@ -2,6 +2,7 @@ import csvParse from 'csv-parse';
 
 import path from 'path';
 import fs from 'fs';
+
 import Transaction from '../models/Transaction';
 import uploadConfig from '../config/upload';
 import CreateTransactionService from './CreateTransactionService';
@@ -28,7 +29,7 @@ class ImportTransactionsService {
       rtrim: true,
     });
     const parseCSV = readCSVStream.pipe(parseStream);
-    const lines: Array<string[]> = [];
+    const lines: Array<any[]> = [];
     parseCSV.on('data', line => {
       lines.push(line);
     });
@@ -59,7 +60,7 @@ class ImportTransactionsService {
     // array of stored transactions
     const storedTransactions: Transaction[] = [];
 
-    const promises = [];
+    const promises: Array<Promise<Transaction>> = [];
 
     transactionDTOArray.forEach(transactionDTO =>
       promises.push(createTransaction.execute(transactionDTO)),

@@ -71,7 +71,7 @@ transactionsRouter.delete('/:id', async (request, response) => {
 
 transactionsRouter.post(
   '/import',
-  upload.single('csv-transactions'),
+  upload.single('file'),
   async (request, response) => {
     const { filename } = request.file;
 
